@@ -97,7 +97,8 @@ Prose is right for things with no structure. Do not draw a box around a list.
 ## Writing prose
 
 - Use the `humanizer` skill for prose that gets committed or shown to a person.
-- Use the `pr-description` skill when drafting a pull request description.
+- Fill in `.github/pull_request_template.md` when writing a pull request. Only
+  check a box you actually did.
 - Say what the code does, why a decision matters, and what constraint a
   contributor needs to know. Nothing else. No generic introductions, no
   promotional language, no invented conclusions.
