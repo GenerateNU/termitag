@@ -1,0 +1,3 @@
+# Both of us get auto-requested for review on every pull request.
+# GitHub only requests the owners who are not the PR author.
+* @anish-sahoo @manueltorres0
