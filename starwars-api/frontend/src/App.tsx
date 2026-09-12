@@ -17,6 +17,15 @@ interface Character {
   threat_score: number;
 }
 
+// threatBadge maps a threat_score to Tailwind classes for its severity color.
+function threatBadge(score: number): string {
+  if (score > 150) return "bg-red-500/20 text-red-300";
+
+  if (score >= 75) return "bg-yellow-500/20 text-yellow-300";
+
+  return "bg-green-500/20 text-green-300";
+}
+
 export default function App() {
   const [faction, setFaction] = useState("rebel");
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -28,16 +37,14 @@ export default function App() {
     setError(null);
 
     try {
-      // TODO 1: Fetch characters from the backend for the selected faction.
-      //
-      // The endpoint is: /api/characters?faction=<faction>
-      // (The Vite proxy in vite.config.js forwards /api/* to http://localhost:8080)
-      //
-      // Steps:
-      //   1. Call fetch() with the correct URL including the faction query param
-      //   2. If the response is not ok (res.ok === false), throw an Error
-      //   3. Parse the body as JSON with res.json()
-      //   4. Call setCharacters(...) with the result
+      const res = await fetch(`/api/characters?faction=${faction}`);
+
+      if (!res.ok) {
+        throw new Error(`Request failed: ${res.status}`);
+      }
+
+      const data = await res.json();
+      setCharacters(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -81,21 +88,24 @@ export default function App() {
       {/* Results */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {characters.map((c) => (
-          // TODO 2: Render a card for each character.
-          //
-          // Each character object has these fields:
-          //   id, name, species, faction, force_sensitive (bool), power_level, threat_score
-          //
-          // Ideas for the card:
-          //   - Bold name as the heading
-          //   - Species and faction as secondary text
-          //   - A colored badge for threat_score (see the tip at the top of this file)
-          //   - Conditionally show a "Force Sensitive" label when force_sensitive is true
-          //
-          // Hint: replace the <p> below with your full card markup.
-          //       key={c.id} must stay on the outermost element.
           <div key={c.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <p className="font-semibold">{c.name}</p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-bold truncate">{c.name}</p>
+                <p className="text-gray-400 text-sm capitalize">
+                  {c.species} · {c.faction}
+                </p>
+              </div>
+              <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded-full ${threatBadge(c.threat_score)}`}>
+                {c.threat_score}
+              </span>
+            </div>
+
+            {c.force_sensitive && (
+              <span className="inline-block mt-3 text-xs font-medium text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded">
+                Force Sensitive
+              </span>
+            )}
           </div>
         ))}
       </div>

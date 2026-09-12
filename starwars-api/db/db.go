@@ -86,5 +86,29 @@ func GetCharactersByFaction(faction string) ([]models.Character, error) {
 	//   - defer rows.Close()
 	//   - check rows.Err() after the loop
 
-	return nil, nil
+	rows, err := DB.Query(
+		"SELECT id, name, species, faction, force_sensitive, power_level FROM characters WHERE faction = ?", faction)
+	if err != nil {
+		return nil, fmt.Errorf("query characters: %w", err)
+	}
+	defer rows.Close()
+
+	var characters []models.Character
+
+	for rows.Next() {
+		var c models.Character
+		var fs int
+		if err := rows.Scan(&c.ID, &c.Name, &c.Species, &c.Faction, &fs, &c.PowerLevel); err != nil {
+				return nil, err
+		}
+		c.ForceSensitive = fs == 1
+		characters = append(characters, c)
+		_ = c
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return characters, nil
 }
