@@ -70,21 +70,29 @@ func seed() error {
 
 // GetCharactersByFaction returns all characters belonging to the given faction.
 func GetCharactersByFaction(faction string) ([]models.Character, error) {
-	// TODO: Write a SQL query to fetch all characters where faction = ?
-	//
-	// Hint: Use DB.Query with a parameterized query, for example:
-	//   rows, err := DB.Query("SELECT id, name, species, faction, force_sensitive, power_level FROM characters WHERE faction = ?", faction)
-	//
-	// Then loop with rows.Next() and call rows.Scan(...) to populate each models.Character.
-	//
-	// Note: force_sensitive is stored as INTEGER (0 or 1) in SQLite.
-	//       Scan it into a local int variable, then convert:
-	//       c.ForceSensitive = fs == 1
-	//
-	// Don't forget to:
-	//   - check the error from DB.Query
-	//   - defer rows.Close()
-	//   - check rows.Err() after the loop
+	rows, err := DB.Query(
+		`SELECT id, name, species, faction, force_sensitive, power_level
+		 FROM characters WHERE faction = ?`,
+		faction,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("query characters: %w", err)
+	}
+	defer rows.Close()
 
-	return nil, nil
+	var characters []models.Character
+	for rows.Next() {
+		var c models.Character
+		var forceSensitive int
+		if err := rows.Scan(&c.ID, &c.Name, &c.Species, &c.Faction, &forceSensitive, &c.PowerLevel); err != nil {
+			return nil, fmt.Errorf("scan character: %w", err)
+		}
+		c.ForceSensitive = forceSensitive == 1
+		characters = append(characters, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate characters: %w", err)
+	}
+
+	return characters, nil
 }
