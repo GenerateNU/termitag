@@ -2,10 +2,6 @@ import { useState, type ChangeEvent } from "react";
 
 const FACTIONS = ["rebel", "empire", "jedi", "sith", "neutral"];
 
-// Tip for TODO 2: use threat_score to pick a badge color
-//   threat_score > 150  → high threat   → red
-//   threat_score 75–150 → medium threat → yellow
-//   threat_score < 75   → low threat    → green
 
 interface Character {
   id: number;
@@ -28,16 +24,13 @@ export default function App() {
     setError(null);
 
     try {
-      // TODO 1: Fetch characters from the backend for the selected faction.
-      //
-      // The endpoint is: /api/characters?faction=<faction>
-      // (The Vite proxy in vite.config.js forwards /api/* to http://localhost:8080)
-      //
-      // Steps:
-      //   1. Call fetch() with the correct URL including the faction query param
-      //   2. If the response is not ok (res.ok === false), throw an Error
-      //   3. Parse the body as JSON with res.json()
-      //   4. Call setCharacters(...) with the result
+      const res = await fetch(`/api/characters?faction=${faction}`);
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error ?? `request failed with status ${res.status}`);
+      }
+      const data: Character[] = await res.json();
+      setCharacters(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -80,24 +73,36 @@ export default function App() {
 
       {/* Results */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {characters.map((c) => (
-          // TODO 2: Render a card for each character.
-          //
-          // Each character object has these fields:
-          //   id, name, species, faction, force_sensitive (bool), power_level, threat_score
-          //
-          // Ideas for the card:
-          //   - Bold name as the heading
-          //   - Species and faction as secondary text
-          //   - A colored badge for threat_score (see the tip at the top of this file)
-          //   - Conditionally show a "Force Sensitive" label when force_sensitive is true
-          //
-          // Hint: replace the <p> below with your full card markup.
-          //       key={c.id} must stay on the outermost element.
-          <div key={c.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <p className="font-semibold">{c.name}</p>
-          </div>
-        ))}
+        {characters.map((c) => {
+          const badgeColor =
+            c.threat_score > 150
+              ? "bg-red-500"
+              : c.threat_score >= 75
+                ? "bg-yellow-400 text-gray-950"
+                : "bg-green-500";
+
+          return (
+            <div key={c.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700 flex flex-col gap-2">
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-bold text-white">{c.name}</p>
+                {c.force_sensitive && (
+                  <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full shrink-0">
+                    Force Sensitive
+                  </span>
+                )}
+              </div>
+              <p className="text-gray-400 text-sm">
+                {c.species} · {c.faction}
+              </p>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-gray-500 text-xs">Power: {c.power_level}</span>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badgeColor}`}>
+                  Threat {c.threat_score}
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
