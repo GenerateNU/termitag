@@ -1,2 +1,48 @@
 [tools]
 go = "1.25.6"
+node = "26.8.2"
+
+[tasks.lint]
+alias = "lint:check"
+description = "Run linters for all languages (non-destructive)"
+run = [{ tasks = ["lint:frontend"] }]
+
+[tasks."lint:fix"]
+description = "Fix lint issues for all languages"
+run = [{ tasks = ["lint:frontend:fix"] }]
+
+[tasks."lint:frontend"]
+alias = "lint:frontend:check"
+description = "Lint frontend code (oxlint)"
+dir = "starwars-api/frontend"
+run = "npm run lint"
+
+[tasks."lint:frontend:fix"]
+description = "Fix frontend lint issues"
+dir = "starwars-api/frontend"
+run = "npm run lint:fix"
+
+# =============================================================================
+# Format tasks
+# =============================================================================
+
+[tasks.fmt]
+alias = ["format", "fmt:check", "format:check"]
+description = "Check formatting for all languages (non-destructive)"
+run = [{ tasks = ["fmt:frontend"] }]
+
+[tasks."fmt:fix"]
+alias = "format:fix"
+description = "Fix formatting for all languages"
+run = [{ tasks = ["fmt:frontend:fix"] }]
+
+[tasks."fmt:frontend"]
+alias = "fmt:frontend:check"
+description = "Check frontend formatting (oxfmt)"
+dir = "starwars-api/frontend"
+run = "npm run format"
+
+[tasks."fmt:frontend:fix"]
+description = "Fix frontend formatting"
+dir = "starwars-api/frontend"
+run = "npm run format:fix"
