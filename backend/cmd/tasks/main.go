@@ -285,7 +285,10 @@ func resetDatabase(root string) error {
 
 func floci(root string, args []string) error {
 	if len(args) != 1 {
-		return errors.New("usage: floci <start|stop|status|reset>")
+		return errors.New("usage: floci <start|stop|status|reset|bucket>")
+	}
+	if args[0] == "bucket" {
+		return provisionBucket(root)
 	}
 	arguments := []string{"compose", "--profile", "floci"}
 	switch args[0] {
@@ -301,6 +304,31 @@ func floci(root string, args []string) error {
 		return fmt.Errorf("unknown Floci task %q", args[0])
 	}
 	return command(root, "docker", arguments...).Run()
+}
+
+// provisionBucket creates the local Floci bucket and its CORS rule.
+func provisionBucket(root string) error {
+	endpoint := os.Getenv("S3_ENDPOINT")
+	if endpoint == "" {
+		return errors.New("S3_ENDPOINT is empty; bucket provisioning is for local Floci only")
+	}
+	bucket := os.Getenv("S3_BUCKET")
+	if bucket == "" {
+		return errors.New("S3_BUCKET is required")
+	}
+	region := os.Getenv("S3_REGION")
+	if region == "" {
+		region = "us-east-1"
+	}
+
+	_ = command(root, "aws", "--endpoint-url", endpoint, "--region", region,
+		"s3", "mb", "s3://"+bucket).Run()
+
+	// Floci needs an explicit cors rule
+	const cors = `{"CORSRules":[{"AllowedOrigins":["http://localhost:5173"],` +
+		`"AllowedMethods":["PUT","GET"],"AllowedHeaders":["*"],"ExposeHeaders":["ETag"]}]}`
+	return command(root, "aws", "--endpoint-url", endpoint, "--region", region,
+		"s3api", "put-bucket-cors", "--bucket", bucket, "--cors-configuration", cors).Run()
 }
 
 // apiCommand runs the API attached with --no-deps, so the database container it

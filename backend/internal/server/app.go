@@ -8,6 +8,7 @@ import (
 	"example_project/internal/repository"
 	"example_project/internal/server/middlewares"
 	"example_project/internal/server/routers"
+	"example_project/internal/storage"
 	"example_project/internal/types"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -17,7 +18,7 @@ import (
 
 // New returns the huma.API alongside the app because cmd/openapi renders the
 // tracked spec from it.
-func New(cfg *config.Configuration, database *sql.DB) (*fiber.App, huma.API) {
+func New(cfg *config.Configuration, database *sql.DB, store storage.Store) (*fiber.App, huma.API) {
 	app := fiber.New(fiber.Config{
 		ServerHeader: cfg.App.Name,
 		AppName:      cfg.App.Name,
@@ -30,6 +31,7 @@ func New(cfg *config.Configuration, database *sql.DB) (*fiber.App, huma.API) {
 		ServiceParams: &types.ServiceParams{
 			Repository: repository.New(database),
 			Config:     cfg,
+			Storage:    store,
 		},
 	})
 
@@ -46,13 +48,14 @@ func ListenConfig(cfg *config.Configuration) fiber.ListenConfig {
 }
 
 // Spec builds the API for cmd/openapi. No handler runs, so the nil database
-// is never read.
+// is never read, and the stub store keeps spec generation off the network.
 func Spec(cfg *config.Configuration) huma.API {
 	api := humafiber.New(fiber.New(), apiConfig(cfg))
 	routers.Setup(api, types.RouteParams{
 		ServiceParams: &types.ServiceParams{
 			Repository: repository.New(nil),
 			Config:     cfg,
+			Storage:    storage.NewStub(cfg.Storage),
 		},
 	})
 	return api
